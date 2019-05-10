@@ -9,20 +9,15 @@ Created on Sun Mar 31 01:34:02 2019
 from PyQt5 import QtGui, QtCore, QtWidgets
 
 HORIZONTAL_HEADERS = ["Name"]
-    
+
+
 class file_class(object):
-    '''
-    a trivial custom data object
-    '''
     def __init__(self, name, path):
         self.name = name
         self.path = path
-    
+
+
 class TreeItem(object):
-    '''
-    a python object used to return row/column data, and keep note of
-    it's parents and/or children
-    '''
     def __init__(self, file, header, parentItem):
         self.file = file
         self.parentItem = parentItem
@@ -40,11 +35,11 @@ class TreeItem(object):
 
     def columnCount(self):
         return len(HORIZONTAL_HEADERS)
-    
+
     def data(self, column):
         if self.file == None:
             if column == 0:
-                return QtCore.QVariant(self.header)            
+                return QtCore.QVariant(self.header)
         else:
             if column == 0:
                 return QtCore.QVariant(self.file.name)
@@ -52,18 +47,16 @@ class TreeItem(object):
 
     def parent(self):
         return self.parentItem
-    
+
     def row(self):
         if self.parentItem:
             return self.parentItem.childItems.index(self)
         return 0
 
+
 class treeModel(QtCore.QAbstractItemModel):
-    '''
-    a model to display a few names, ordered by sex
-    '''
     def __init__(self, parent=None):
-        super(treeModel, self).__init__(parent)            
+        super(treeModel, self).__init__(parent)
         self.rootItem = TreeItem(None, "Root", None)
         self.parents = {}
 
@@ -110,16 +103,16 @@ class treeModel(QtCore.QAbstractItemModel):
             return self.createIndex(row, column, childItem)
         else:
             return QtCore.QModelIndex()
-    
+
     def getIndex(self, path):
         pathParts = path.split("/")
-        
+
         parent = pathParts[-2]
         file = self.parents[parent]
         row = file.row()
         column = 0
         parent = file.parent()
-        
+
         return self.createIndex(row, column, file)
 
     def parent(self, index):
@@ -129,7 +122,7 @@ class treeModel(QtCore.QAbstractItemModel):
         childItem = index.internalPointer()
         if not childItem:
             return QtCore.QModelIndex()
-        
+
         parentItem = childItem.parent()
 
         if parentItem == self.rootItem:
@@ -145,20 +138,20 @@ class treeModel(QtCore.QAbstractItemModel):
         else:
             p_Item = parent.internalPointer()
         return p_Item.childCount()
-    
+
     def setupModelData(self, files):
         for file in files:
             fname = file[0]
             fpath = file[1]
             pathParts = fpath.split("/")
-            
+
             ustPath = ""
             for part in pathParts:
                 if part == "":
                     part = "/"
-                    
+
                 if part not in self.parents.keys():
-                    
+
                     if ustPath == "":
                         pf = file_class(part, "/")
                         fi = TreeItem(pf, "/", self.rootItem)
@@ -168,38 +161,35 @@ class treeModel(QtCore.QAbstractItemModel):
                         parentDir = ustPath.split("/")[-1]
                         if parentDir == "":
                             parentDir = "/"
-                        
+
                         fi = TreeItem(pf, ustPath, self.parents[parentDir])
                         self.parents[parentDir].appendChild(fi)
-                        
+
                     self.parents[part] = fi
-                
+
                 if part != "/" and ustPath != "/":
                     ustPath += "/"
                 ustPath += part
-                
+
             f = file_class(fname, fpath)
             sPart = pathParts[-1]
             if sPart == "":
                 sPart = "/"
             newFile = TreeItem(f, fpath, self.parents[sPart])
             self.parents[sPart].appendChild(newFile)
-    
+
     def fileInfo(self, index):
         if not index.isValid():
             return self.parents["/"]
-        
+
         return index.internalPointer().file
-    
+
     def searchModel(self, file):
-        '''
-        get the modelIndex for a given appointment
-        '''
         parentDir = file.path.split("/")[-1]
-        
+
         index = 0
         for child in self.parents[parentDir]:
             if file == child.file:
                 index = self.createIndex(child.row(), 0, child)
-        
+
         return index
